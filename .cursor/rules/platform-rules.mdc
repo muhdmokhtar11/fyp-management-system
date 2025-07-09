@@ -1,0 +1,63 @@
+```json
+{
+  "name": "FYP Management System - Project Proposal Submission",
+  "description": "Guides the AI to understand and generate code for the FYP management system, specifically focusing on the project proposal submission feature. Emphasizes user-friendliness, data validation, plagiarism checking, and notification mechanisms.",
+  "triggers": [
+    {
+      "type": "file_extension",
+      "values": [".js", ".jsx", ".ts", ".tsx", ".py", ".java", ".html", ".css", ".sql"]
+    },
+    {
+      "type": "file_content",
+      "contains": ["fyp", "project proposal", "submission", "student", "supervisor", "abstract", "methodology", "plagiarism", "review", "approval", "faculty", "team members"]
+    },
+    {
+      "type": "prompt_content",
+      "contains": ["submit project proposal", "fyp management system", "proposal submission form", "plagiarism check", "supervisor selection", "proposal status", "student proposal", "academic paper database"]
+    }
+  ],
+  "actions": [
+    {
+      "type": "set_context",
+      "context": {
+        "domain": "FYP Management System",
+        "purpose": "Managing project proposal submissions and the review process.",
+        "features": [
+          "Project Proposal Submission Form",
+          "Data Validation",
+          "Plagiarism Detection",
+          "Supervisor Selection",
+          "Proposal Routing",
+          "Proposal Status Tracking",
+          "Email Notifications",
+          "File Uploads",
+          "User Authentication",
+          "Role-Based Access Control (Student, Supervisor, Coordinator)"
+        ],
+        "target_audience": "Students, Supervisors, FYP Coordinators",
+        "business_rules": [
+          "Password requires a minimum of 8 characters, including at least one uppercase letter, one lowercase letter, and one number.",
+          "Each student can only submit one proposal at a time. A new proposal can only be submitted after the previous one is rejected or finalized.",
+          "The system should automatically check for plagiarism against existing proposals and a database of academic papers."
+        ],
+        "ui_ux_guidelines": {
+          "design_system": "Use a clean and intuitive design system (e.g., Bootstrap, Material UI, Ant Design) that is easy to navigate and understand.",
+          "responsiveness": "Ensure the UI is fully responsive across different devices (desktops, tablets, mobile phones).",
+          "interactivity": "Incorporate interactive elements like progress bars, confirmation modals, and real-time validation feedback.",
+          "error_handling": "Provide clear and informative error messages to guide students in correcting mistakes.",
+          "accessibility": "Follow accessibility guidelines (WCAG) to ensure the platform is usable by people with disabilities.",
+          "user_flow": "Design a clear and logical user flow for submitting proposals, minimizing the number of steps required.",
+          "performance": "Optimize the UI for fast loading times and smooth performance, especially during peak submission periods.",
+          "feedback": "Provide clear and immediate feedback to user actions (e.g., submission confirmation, status updates).",
+          "consistency": "Maintain consistent styling and behavior across all pages and components related to proposal submission.",
+          "modern_aesthetics": "Utilize a modern and visually appealing color palette and layout."
+        }
+      }
+    },
+    {
+        "type":"add_instruction",
+        "instruction":"When generating UI code or suggestions, prioritize user-friendliness, responsiveness, and clear error handling. Ensure the UI aligns with the specified design system and accessibility guidelines. Focus on creating an intuitive user flow for proposal submission and providing clear feedback to user actions. When generating backend code, focus on data validation, plagiarism checking, secure data storage, and efficient notification mechanisms. Adhere to the defined business rules."
+    }
+  ]
+}
+```

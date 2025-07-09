@@ -1,0 +1,38 @@
+```jdl
+entity Proposal {
+  title String required minlength(5) maxlength(200),
+  abstract String required minlength(20) maxlength(1000),
+  submissionDate Instant required,
+  methodology String required minlength(20) maxlength(1000),
+  status ProposalStatus required,
+  plagiarismScore Double min(0) max(100)
+}
+
+entity File {
+  name String required,
+  content Blob required
+}
+
+enum ProposalStatus {
+  SUBMITTED,
+  UNDER_REVIEW,
+  APPROVED,
+  REJECTED
+}
+
+relationship ManyToOne {
+  Proposal{student(login) required} to User with builtInEntity
+}
+
+relationship ManyToOne {
+  Proposal{preferredSupervisor(login)} to User with builtInEntity
+}
+
+relationship OneToMany {
+  Proposal{file} to File
+}
+
+service Proposal, File with serviceClass
+
+paginate Proposal with pagination
+```
