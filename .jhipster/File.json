@@ -1,0 +1,22 @@
+{
+  "annotations": {
+    "changelogDate": "20250709082332"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "content",
+      "fieldType": "Blob",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "File",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}

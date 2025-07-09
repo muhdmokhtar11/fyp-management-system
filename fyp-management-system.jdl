@@ -1,7 +1,6 @@
-```jdl
 entity Proposal {
   title String required minlength(5) maxlength(200),
-  abstract String required minlength(20) maxlength(1000),
+  proposalAbstract String required minlength(20) maxlength(1000),
   submissionDate Instant required,
   methodology String required minlength(20) maxlength(1000),
   status ProposalStatus required,
@@ -35,4 +34,3 @@ relationship OneToMany {
 service Proposal, File with serviceClass
 
 paginate Proposal with pagination
-```
