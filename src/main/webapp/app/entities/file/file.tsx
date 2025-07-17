@@ -1,14 +1,62 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button, Table } from 'reactstrap';
+import { Button, Table, Card, CardBody, CardTitle, Row, Col } from 'reactstrap';
 import { byteSize, getSortState, openFile } from 'react-jhipster';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons';
+import { faSort, faSortDown, faSortUp, faChartBar } from '@fortawesome/free-solid-svg-icons';
 import { ASC, DESC } from 'app/shared/util/pagination.constants';
 import { overrideSortStateWithQueryParams } from 'app/shared/util/entity-utils';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
 
 import { getEntities } from './file.reducer';
+
+// New File Statistics Component
+const FileStatistics = ({ fileList }) => {
+  const calculateFileStats = () => {
+    if (!fileList || fileList.length === 0) {
+      return { count: 0, totalSize: 0, averageSize: 0 };
+    }
+
+    const totalSize = fileList.reduce((sum, file) => sum + (file.content ? file.content.length : 0), 0);
+    return {
+      count: fileList.length,
+      totalSize,
+      averageSize: Math.round(totalSize / fileList.length),
+    };
+  };
+
+  const stats = calculateFileStats();
+
+  return (
+    <Card className="mb-3">
+      <CardBody>
+        <CardTitle>
+          <FontAwesomeIcon icon={faChartBar} /> File Statistics
+        </CardTitle>
+        <Row>
+          <Col md={4}>
+            <div className="text-center">
+              <h4 className="text-primary">{stats.count}</h4>
+              <small className="text-muted">Total Files</small>
+            </div>
+          </Col>
+          <Col md={4}>
+            <div className="text-center">
+              <h4 className="text-success">{byteSize(stats.totalSize.toString())}</h4>
+              <small className="text-muted">Total Size</small>
+            </div>
+          </Col>
+          <Col md={4}>
+            <div className="text-center">
+              <h4 className="text-info">{byteSize(stats.averageSize.toString())}</h4>
+              <small className="text-muted">Average Size</small>
+            </div>
+          </Col>
+        </Row>
+      </CardBody>
+    </Card>
+  );
+};
 
 export const File = () => {
   const dispatch = useAppDispatch();
@@ -76,6 +124,7 @@ export const File = () => {
           </Link>
         </div>
       </h2>
+      <FileStatistics fileList={fileList} />
       <div className="table-responsive">
         {fileList && fileList.length > 0 ? (
           <Table responsive>

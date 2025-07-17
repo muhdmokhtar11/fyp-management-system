@@ -13,6 +13,8 @@
 // https://on.cypress.io/configuration
 // ***********************************************************
 
+// Coverage support
+import '@cypress/code-coverage/support';
 import './account';
 import './commands';
 import './navbar';
