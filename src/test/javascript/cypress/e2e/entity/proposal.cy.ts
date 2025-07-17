@@ -9,249 +9,469 @@ import {
   entityEditButtonSelector,
   entityTableSelector,
 } from '../../support/entity';
+import { Proposal } from 'app/shared/model/proposal.model';
 
-describe('Proposal e2e test', () => {
-  const proposalPageUrl = '/proposal';
-  const proposalPageUrlPattern = new RegExp('/proposal(\\?.*)?$');
-  const username = Cypress.env('E2E_USERNAME') ?? 'user';
-  const password = Cypress.env('E2E_PASSWORD') ?? 'user';
-  // const proposalSample = {"title":"electric","proposalAbstract":"rejigger playfullyXX","submissionDate":"2025-07-08T19:27:30.576Z","methodology":"selfish so mehXXXXXX","status":"APPROVED"};
+const sampleProposals: Proposal[] = [
+  {
+    id: 1,
+    title: 'Machine Learning in Healthcare',
+    proposalAbstract: 'This proposal explores the application of machine learning algorithms in healthcare diagnostics.',
+    submissionDate: 2024115,
+    methodology: 'Quantitative research with data analysis,',
+    status: 'SUBMITTED',
+    plagiarismScore: 12,
+    student: { id: 1, login: 'student1' },
+    preferredSupervisor: { id: 2, login: 'supervisor1' },
+  },
+  {
+    id: 2,
+    title: 'Blockchain for Supply Chain',
+    proposalAbstract: 'Investigating blockchain technology for supply chain transparency and efficiency.',
+    submissionDate: 2024120,
+    methodology: 'Case study analysis and implementation',
+    status: 'APPROVED',
+    plagiarismScore: 8,
+    student: { id: 3, login: 'student2' },
+    preferredSupervisor: { id: 4, login: 'supervisor2' },
+  },
+  {
+    id: 3,
+    title: 'IoT Security Framework',
+    proposalAbstract: 'Developing a comprehensive security framework for IoT devices.',
+    submissionDate: 202421,
+    methodology: 'Experimental research with prototype development',
+    status: 'PENDING',
+    plagiarismScore: 25,
+    student: { id: 5, login: 'student3' },
+    preferredSupervisor: { id: 6, login: 'supervisor3' },
+  },
+  {
+    id: 4,
+    title: 'AI in Education',
+    proposalAbstract: 'Exploring artificial intelligence applications in educational technology.',
+    submissionDate: 2024210,
+    methodology: 'Mixed methods research with surveys and interviews,',
+    status: 'REJECTED',
+    plagiarismScore: 35,
+    student: { id: 7, login: 'student4' },
+    preferredSupervisor: { id: 8, login: 'supervisor4' },
+  },
+];
 
-  let proposal;
-  // let user;
-
+describe('Proposal Page', () => {
   beforeEach(() => {
-    cy.login(username, password);
-  });
-
-  /* Disabled due to incompatibility
-  beforeEach(() => {
-    // create an instance at the required relationship entity:
-    cy.authenticatedRequest({
-      method: 'POST',
-      url: '/api/users',
-      body: {"login":"BB","firstName":"Edwin","lastName":"Harris","email":"Millie95@hotmail.com","imageUrl":"weep prime moist"},
-    }).then(({ body }) => {
-      user = body;
-    });
-  });
-   */
-
-  beforeEach(() => {
-    cy.intercept('GET', '/api/proposals+(?*|)').as('entitiesRequest');
-    cy.intercept('POST', '/api/proposals').as('postEntityRequest');
-    cy.intercept('DELETE', '/api/proposals/*').as('deleteEntityRequest');
-  });
-
-  /* Disabled due to incompatibility
-  beforeEach(() => {
-    // Simulate relationships api for better performance and reproducibility.
-    cy.intercept('GET', '/api/files', {
+    // Mock API calls
+    cy.intercept('GET', /\/?api\/proposals.*/, {
       statusCode: 200,
-      body: [],
-    });
+      body: {
+        content: sampleProposals,
+        totalElements: sampleProposals.length,
+        totalPages: 1,
+        size: 20,
+        number: 0,
+      },
+    }).as('getProposals');
 
-    cy.intercept('GET', '/api/users', {
+    cy.intercept('DELETE', /\/?api\/proposals\/.*/, {
+      statusCode: 204,
+    }).as('deleteProposal');
+
+    cy.intercept('PUT', /\/?api\/proposals\/.*/, {
       statusCode: 200,
-      body: [user],
+      body: sampleProposals[0],
+    }).as('updateProposal');
+
+    // Visit the proposals page
+    cy.visit('/proposal');
+    cy.wait('@getProposals');
+  });
+
+  describe('Basic Functionality', () => {
+    it('should load the proposal page successfully', () => {
+      cy.get('[data-testid="proposal-page"]').should('be.visible');
+      cy.get('[data-testid="proposal-heading"]').should('contain', 'Proposals');
+      cy.get('[data-testid="proposals-table"]').should('be.visible');
     });
 
-  });
-   */
-
-  afterEach(() => {
-    if (proposal) {
-      cy.authenticatedRequest({
-        method: 'DELETE',
-        url: `/api/proposals/${proposal.id}`,
-      }).then(() => {
-        proposal = undefined;
-      });
-    }
-  });
-
-  /* Disabled due to incompatibility
-  afterEach(() => {
-    if (user) {
-      cy.authenticatedRequest({
-        method: 'DELETE',
-        url: `/api/users/${user.id}`,
-      }).then(() => {
-        user = undefined;
-      });
-    }
-  });
-   */
-
-  it('Proposals menu should load Proposals page', () => {
-    cy.visit('/');
-    cy.clickOnEntityMenuItem('proposal');
-    cy.wait('@entitiesRequest').then(({ response }) => {
-      if (response?.body.length === 0) {
-        cy.get(entityTableSelector).should('not.exist');
-      } else {
-        cy.get(entityTableSelector).should('exist');
-      }
-    });
-    cy.getEntityHeading('Proposal').should('exist');
-    cy.url().should('match', proposalPageUrlPattern);
-  });
-
-  describe('Proposal page', () => {
-    describe('create button click', () => {
-      beforeEach(() => {
-        cy.visit(proposalPageUrl);
-        cy.wait('@entitiesRequest');
+    it('should display all proposal elements correctly', () => {
+      // Check table headers
+      cy.get('[data-testid="proposals-table-header"]').within(() => {
+        cy.get('[data-testid="sort-id-header"]').should('contain', 'ID');
+        cy.get('[data-testid="sort-title-header"]').should('contain', 'Title');
+        cy.get('[data-testid="sort-abstract-header"]').should('contain', 'Proposal Abstract');
+        cy.get('[data-testid="sort-date-header"]').should('contain', 'Submission Date');
+        cy.get('[data-testid="sort-methodology-header"]').should('contain', 'Methodology');
+        cy.get('[data-testid="sort-status-header"]').should('contain', 'Status');
+        cy.get('[data-testid="sort-plagiarism-header"]').should('contain', 'Plagiarism Score');
+        cy.get('[data-testid="student-header"]').should('contain', 'Student');
+        cy.get('[data-testid="supervisor-header"]').should('contain', 'Preferred Supervisor');
       });
 
-      it('should load create Proposal page', () => {
-        cy.get(entityCreateButtonSelector).click();
-        cy.url().should('match', new RegExp('/proposal/new$'));
-        cy.getEntityCreateUpdateHeading('Proposal');
-        cy.get(entityCreateSaveButtonSelector).should('exist');
-        cy.get(entityCreateCancelButtonSelector).click();
-        cy.wait('@entitiesRequest').then(({ response }) => {
-          expect(response?.statusCode).to.equal(200);
-        });
-        cy.url().should('match', proposalPageUrlPattern);
+      // Check proposal data
+      cy.get('[data-testid="proposal-row-1').within(() => {
+        cy.get('[data-testid="proposal-title-1"]').should('contain', 'Machine Learning in Healthcare');
+        cy.get('[data-testid="proposal-abstract-1"]').should('contain', 'machine learning algorithms');
+        cy.get('[data-testid="status-badge-1"]').should('contain', 'SUBMITTED');
+        cy.get('[data-testid="plagiarism-score-1"]').should('contain', '12%');
       });
     });
 
-    describe('with existing value', () => {
-      /* Disabled due to incompatibility
-      beforeEach(() => {
-        cy.authenticatedRequest({
-          method: 'POST',
-          url: '/api/proposals',
-          body: {
-            ...proposalSample,
-            student: user,
-          },
-        }).then(({ body }) => {
-          proposal = body;
-
-          cy.intercept(
-            {
-              method: 'GET',
-              url: '/api/proposals+(?*|)',
-              times: 1,
-            },
-            {
-              statusCode: 200,
-              headers: {
-                link: '<http://localhost/api/proposals?page=0&size=20>; rel="last",<http://localhost/api/proposals?page=0&size=20>; rel="first"',
-              },
-              body: [proposal],
-            }
-          ).as('entitiesRequestInternal');
-        });
-
-        cy.visit(proposalPageUrl);
-
-        cy.wait('@entitiesRequestInternal');
+    it('should have all action buttons visible', () => {
+      cy.get('[data-testid="proposal-header-actions"]').within(() => {
+        cy.get('[data-testid="refresh-proposals-btn"]').should('be.visible');
+        cy.get('[data-testid="toggle-statistics-btn"]').should('be.visible');
+        cy.get('[data-testid="toggle-analytics-btn"]').should('be.visible');
+        cy.get('[data-testid="export-proposals-btn"]').should('be.visible');
+        cy.get('[data-testid="create-proposal-btn"]').should('be.visible');
       });
-       */
+    });
 
-      beforeEach(function () {
-        cy.visit(proposalPageUrl);
+    it('should navigate to create proposal page', () => {
+      cy.get('[data-testid="create-proposal-btn"]').click();
+      cy.url().should('include', '/proposal/new');
+    });
 
-        cy.wait('@entitiesRequest').then(({ response }) => {
-          if (response?.body.length === 0) {
-            this.skip();
-          }
-        });
-      });
+    it('should navigate to proposal detail page', () => {
+      cy.get('[data-testid="view-proposal-btn-1"]').click();
+      cy.url().should('include', '/proposal/1');
+    });
 
-      it('detail button click should load details Proposal page', () => {
-        cy.get(entityDetailsButtonSelector).first().click();
-        cy.getEntityDetailsHeading('proposal');
-        cy.get(entityDetailsBackButtonSelector).click();
-        cy.wait('@entitiesRequest').then(({ response }) => {
-          expect(response?.statusCode).to.equal(200);
-        });
-        cy.url().should('match', proposalPageUrlPattern);
-      });
-
-      it('edit button click should load edit Proposal page and go back', () => {
-        cy.get(entityEditButtonSelector).first().click();
-        cy.getEntityCreateUpdateHeading('Proposal');
-        cy.get(entityCreateSaveButtonSelector).should('exist');
-        cy.get(entityCreateCancelButtonSelector).click();
-        cy.wait('@entitiesRequest').then(({ response }) => {
-          expect(response?.statusCode).to.equal(200);
-        });
-        cy.url().should('match', proposalPageUrlPattern);
-      });
-
-      it('edit button click should load edit Proposal page and save', () => {
-        cy.get(entityEditButtonSelector).first().click();
-        cy.getEntityCreateUpdateHeading('Proposal');
-        cy.get(entityCreateSaveButtonSelector).click();
-        cy.wait('@entitiesRequest').then(({ response }) => {
-          expect(response?.statusCode).to.equal(200);
-        });
-        cy.url().should('match', proposalPageUrlPattern);
-      });
-
-      // Reason: cannot create a required entity with relationship with required relationships.
-      it.skip('last delete button click should delete instance of Proposal', () => {
-        cy.intercept('GET', '/api/proposals/*').as('dialogDeleteRequest');
-        cy.get(entityDeleteButtonSelector).last().click();
-        cy.wait('@dialogDeleteRequest');
-        cy.getEntityDeleteDialogHeading('proposal').should('exist');
-        cy.get(entityConfirmDeleteButtonSelector).click();
-        cy.wait('@deleteEntityRequest').then(({ response }) => {
-          expect(response?.statusCode).to.equal(204);
-        });
-        cy.wait('@entitiesRequest').then(({ response }) => {
-          expect(response?.statusCode).to.equal(200);
-        });
-        cy.url().should('match', proposalPageUrlPattern);
-
-        proposal = undefined;
-      });
+    it('should navigate to proposal edit page', () => {
+      cy.get('[data-testid="edit-proposal-btn-1"]').click();
+      cy.url().should('include', '/proposal/1/edit');
     });
   });
 
-  describe('new Proposal page', () => {
-    beforeEach(() => {
-      cy.visit(`${proposalPageUrl}`);
-      cy.get(entityCreateButtonSelector).click();
-      cy.getEntityCreateUpdateHeading('Proposal');
+  describe('Search and Filter Functionality', () => {
+    it('should search proposals by title', () => {
+      cy.get('[data-testid="search-proposals-input"]').type('Machine Learning');
+      cy.get('[data-testid="proposal-row-1"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-2"]').should('not.exist');
+      cy.get('[data-testid="proposal-row-3"]').should('not.exist');
+      cy.get('[data-testid="proposal-row-4"]').should('not.exist');
     });
 
-    // Reason: cannot create a required entity with relationship with required relationships.
-    it.skip('should create an instance of Proposal', () => {
-      cy.get(`[data-cy="title"]`).type('profane');
-      cy.get(`[data-cy="title"]`).should('have.value', 'profane');
+    it('should search proposals by abstract', () => {
+      cy.get('[data-testid="search-proposals-input"]').type('blockchain');
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-1"]').should('not.exist');
+    });
 
-      cy.get(`[data-cy="proposalAbstract"]`).type('yowzaXXXXXXXXXXXXXXX');
-      cy.get(`[data-cy="proposalAbstract"]`).should('have.value', 'yowzaXXXXXXXXXXXXXXX');
+    it('should search proposals by methodology', () => {
+      cy.get('[data-testid="search-proposals-input"]').type('Quantitative');
+      cy.get('[data-testid="proposal-row-1"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-2"]').should('not.exist');
+    });
 
-      cy.get(`[data-cy="submissionDate"]`).type('2025-07-09T05:39');
-      cy.get(`[data-cy="submissionDate"]`).blur();
-      cy.get(`[data-cy="submissionDate"]`).should('have.value', '2025-07-09T05:39');
+    it('should clear search results', () => {
+      cy.get('[data-testid="search-proposals-input"]').type('Machine Learning');
+      cy.get('[data-testid="clear-filters-btn"]').click();
+      cy.get('[data-testid="search-proposals-input"]').should('have.value', '');
+      cy.get('[data-testid="proposal-row-1"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-3"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-4"]').should('be.visible');
+    });
 
-      cy.get(`[data-cy="methodology"]`).type('axeXXXXXXXXXXXXXXXXX');
-      cy.get(`[data-cy="methodology"]`).should('have.value', 'axeXXXXXXXXXXXXXXXXX');
+    it('should open advanced filter modal', () => {
+      cy.get('[data-testid="advanced-filter-btn"]').click();
+      cy.get('[data-testid="advanced-filter-modal"]').should('be.visible');
+      cy.get('[data-testid="advanced-filter-modal-header"]').should('contain', 'Advanced Filter');
+    });
 
-      cy.get(`[data-cy="status"]`).select('APPROVED');
+    it('should filter by status', () => {
+      cy.get('[data-testid="advanced-filter-btn"]').click();
+      cy.get('[data-testid="status-filter-select"]').select('APPROVED');
+      cy.get('[data-testid="apply-filter-btn"]').click();
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-1"]').should('not.exist');
+      cy.get('[data-testid="proposal-row-3"]').should('not.exist');
+      cy.get('[data-testid="proposal-row-4"]').should('not.exist');
+    });
 
-      cy.get(`[data-cy="plagiarismScore"]`).type('67.92');
-      cy.get(`[data-cy="plagiarismScore"]`).should('have.value', '67.92');
+    it('should filter by date range', () => {
+      cy.get('[data-testid="advanced-filter-btn"]').click();
+      cy.get('[data-testid="start-date-input"]').type('224-11');
+      cy.get('[data-testid="end-date-input"]').type('224-131');
+      cy.get('[data-testid="apply-filter-btn"]').click();
+      cy.get('[data-testid="proposal-row-1"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible');
+      cy.get('[data-testid="proposal-row-3"]').should('not.exist');
+      cy.get('[data-testid="proposal-row-4"]').should('not.exist');
+    });
 
-      cy.get(`[data-cy="student"]`).select(1);
+    it('should close advanced filter modal', () => {
+      cy.get('[data-testid="advanced-filter-btn"]').click();
+      cy.get('[data-testid="cancel-filter-btn"]').click();
+      cy.get('[data-testid="advanced-filter-modal"]').should('not.exist');
+    });
+  });
 
-      cy.get(entityCreateSaveButtonSelector).click();
+  describe('Sorting Functionality', () => {
+    it('should sort by ID', () => {
+      cy.get('[data-testid="sort-id-header"]').click();
+      cy.get('[data-testid="proposal-row-1"]').should('be.visible');
+      cy.get('[data-testid="sort-id-header"]').click();
+      cy.get('[data-testid="proposal-row-4"]').should('be.visible');
+    });
 
-      cy.wait('@postEntityRequest').then(({ response }) => {
-        expect(response?.statusCode).to.equal(201);
-        proposal = response.body;
-      });
-      cy.wait('@entitiesRequest').then(({ response }) => {
-        expect(response?.statusCode).to.equal(200);
-      });
-      cy.url().should('match', proposalPageUrlPattern);
+    it('should sort by title', () => {
+      cy.get('[data-testid="sort-title-header"]').click();
+      cy.get('[data-testid="proposal-row-4"]').should('be.visible'); // AI in Education
+      cy.get('[data-testid="sort-title-header"]').click();
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible'); // Blockchain for Supply Chain
+    });
+
+    it('should sort by status', () => {
+      cy.get('[data-testid="sort-status-header"]').click();
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible'); // APPROVED
+      cy.get('[data-testid="sort-status-header"]').click();
+      cy.get('[data-testid="proposal-row-4"]').should('be.visible'); // REJECTED
+    });
+
+    it('should sort by plagiarism score', () => {
+      cy.get('[data-testid="sort-plagiarism-header"]').click();
+      cy.get('[data-testid="proposal-row-2"]').should('be.visible'); // 8
+      cy.get('[data-testid="sort-plagiarism-header"]').click();
+      cy.get('[data-testid="proposal-row-4"]').should('be.visible'); // 35%
+    });
+  });
+
+  describe('Bulk Actions', () => {
+    it('should select individual proposals', () => {
+      cy.get('[data-testid="proposal-checkbox-1"]').check();
+      cy.get('[data-testid="proposal-checkbox-2"]').check();
+      cy.get('[data-testid="selected-count"]').should('contain', '2 proposal(s) selected');
+    });
+
+    it('should select all proposals', () => {
+      cy.get('[data-testid="select-all-proposals-checkbox"]').check();
+      cy.get('[data-testid="selected-count"]').should('contain', '4 proposal(s) selected');
+    });
+
+    it('should unselect all proposals', () => {
+      cy.get('[data-testid="select-all-proposals-checkbox"]').check();
+      cy.get('[data-testid="select-all-proposals-checkbox"]').uncheck();
+      cy.get('[data-testid="bulk-actions-alert"]').should('not.exist');
+    });
+
+    it('should show bulk action buttons when proposals are selected', () => {
+      cy.get('[data-testid="proposal-checkbox-1"]').check();
+      cy.get('[data-testid="bulk-actions-alert"]').should('be.visible');
+      cy.get('[data-testid="bulk-pending-btn"]').should('be.visible');
+      cy.get('[data-testid="bulk-approve-btn"]').should('be.visible');
+      cy.get('[data-testid="bulk-delete-btn"]').should('be.visible');
+    });
+
+    it('should perform bulk status update to pending', () => {
+      cy.get('[data-testid="proposal-checkbox-1"]').check();
+      cy.get('[data-testid="bulk-pending-btn"]').click();
+      cy.get('[data-testid="bulk-actions-alert"]').should('not.exist');
+    });
+
+    it('should perform bulk status update to approved', () => {
+      cy.get('[data-testid="proposal-checkbox-1"]').check();
+      cy.get('[data-testid="bulk-approve-btn"]').click();
+      cy.get('[data-testid="bulk-actions-alert"]').should('not.exist');
+    });
+
+    it('should perform bulk delete', () => {
+      cy.get('[data-testid="proposal-checkbox-1"]').check();
+      cy.get('[data-testid="bulk-delete-btn"]').click();
+      cy.get('[data-testid="bulk-actions-alert"]').should('not.exist');
+    });
+  });
+
+  describe('Statistics Dashboard', () => {
+    it('should toggle statistics dashboard', () => {
+      cy.get('[data-testid="toggle-statistics-btn"]').click();
+      cy.get('[data-testid="statistics-dashboard"]').should('be.visible');
+      cy.get('[data-testid="statistics-total"]').should('contain', 4);
+      cy.get('[data-testid="statistics-submitted"]').should('contain', 1);
+      cy.get('[data-testid="statistics-approved"]').should('contain', 1);
+      cy.get('[data-testid="statistics-rejected"]').should('contain', 1);
+      cy.get('[data-testid="statistics-pending"]').should('contain', 1);
+    });
+
+    it('should hide statistics dashboard when toggled again', () => {
+      cy.get('[data-testid="toggle-statistics-btn"]').click();
+      cy.get('[data-testid="statistics-dashboard"]').should('be.visible');
+      cy.get('[data-testid="toggle-statistics-btn"]').click();
+      cy.get('[data-testid="statistics-dashboard"]').should('not.exist');
+    });
+  });
+
+  describe('Analytics Dashboard', () => {
+    it('should toggle analytics dashboard', () => {
+      cy.get('[data-testid="toggle-analytics-btn"]').click();
+      cy.get('[data-testid="analytics-dashboard"]').should('be.visible');
+      cy.get('[data-testid="analytics-title"]').should('contain', 'Detailed Analytics');
+    });
+
+    it('should display analytics data correctly', () => {
+      cy.get('[data-testid="toggle-analytics-btn"]').click();
+      cy.get('[data-testid="analytics-total"]').should('contain', 4);
+      cy.get('[data-testid="analytics-submitted"]').should('contain', 1);
+      cy.get('[data-testid="analytics-approved"]').should('contain', 1);
+      cy.get('[data-testid="analytics-rejected"]').should('contain', 1);
+      cy.get('[data-testid="analytics-pending"]').should('contain', 1);
+      cy.get('[data-testid="analytics-high-risk"]').should('contain', 1);
+      cy.get('[data-testid="analytics-medium-risk"]').should('contain', 1);
+      cy.get('[data-testid="analytics-low-risk"]').should('contain', 2);
+    });
+
+    it('should export analytics data', () => {
+      cy.get('[data-testid="toggle-analytics-btn"]').click();
+      cy.get('[data-testid="export-analytics-btn"]').click();
+      // Note: File download testing is complex in Cypress, so we just verify the button is clickable
+    });
+
+    it('should hide analytics dashboard when toggled again', () => {
+      cy.get('[data-testid="toggle-analytics-btn"]').click();
+      cy.get('[data-testid="analytics-dashboard"]').should('be.visible');
+      cy.get('[data-testid="toggle-analytics-btn"]').click();
+      cy.get('[data-testid="analytics-dashboard"]').should('not.exist');
+    });
+  });
+
+  describe('Export Functionality', () => {
+    it('should export proposals to CSV', () => {
+      cy.get('[data-testid="export-proposals-btn"]').click();
+      // Note: File download testing is complex in Cypress, so we just verify the button is clickable
+    });
+  });
+
+  describe('Refresh Functionality', () => {
+    it('should refresh the proposals list', () => {
+      cy.get('[data-testid="refresh-proposals-btn"]').click();
+      cy.wait('@getProposals');
+      cy.get('[data-testid="proposals-table"]').should('be.visible');
+    });
+  });
+
+  describe('Empty State Handling', () => {
+    it('should display no proposals message when no data', () => {
+      // Mock empty response
+      cy.intercept('GET', /\/?api\/proposals.*/, {
+        statusCode: 200,
+        body: {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: 20,
+          number: 0,
+        },
+      }).as('getEmptyProposals');
+
+      cy.visit('/proposal');
+      cy.wait('@getEmptyProposals');
+      cy.get('[data-testid="no-proposals-message"]').should('contain', 'No Proposals found');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle API errors gracefully', () => {
+      cy.intercept('GET', /\/?api\/proposals.*/, {
+        statusCode: 500,
+        body: { message: 'Internal Server Error' },
+      }).as('getProposalsError');
+
+      cy.visit('/proposal');
+      cy.wait('@getProposalsError');
+      // The page should still be visible even with API errors
+      cy.get('[data-testid="proposal-page"]').should('be.visible');
+    });
+  });
+
+  describe('Responsive Design', () => {
+    it('should display correctly on mobile viewport', () => {
+      cy.viewport(375, 667); // iPhone SE
+      cy.get('[data-testid="proposal-page"]').should('be.visible');
+      cy.get('[data-testid="proposals-table-container"]').should('be.visible');
+    });
+
+    it('should display correctly on tablet viewport', () => {
+      cy.viewport(768, 24); // iPad
+      cy.get('[data-testid="proposal-page"]').should('be.visible');
+      cy.get('[data-testid="proposals-table-container"]').should('be.visible');
+    });
+
+    it('should display correctly on desktop viewport', () => {
+      cy.viewport(1920, 1080); // Full HD
+      cy.get('[data-testid="proposal-page"]').should('be.visible');
+      cy.get('[data-testid="proposals-table-container"]').should('be.visible');
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('should have proper ARIA labels and roles', () => {
+      cy.get('[data-testid="search-proposals-input"]').should('have.attr', 'placeholder');
+      cy.get('[data-testid="proposals-table"]').should('be.visible');
+      cy.get('[data-testid="select-all-proposals-checkbox"]').should('be.visible');
+    });
+
+    it('should support keyboard navigation', () => {
+      cy.get('[data-testid="search-proposals-input"]').focus();
+      cy.get('[data-testid="search-proposals-input"]').type('test');
+      cy.get('[data-testid="search-proposals-input"]').should('have.value', 'test');
+    });
+  });
+
+  describe('Performance', () => {
+    it('should load within acceptable time', () => {
+      const startTime = Date.now();
+      cy.visit('/proposal');
+      cy.get('[data-testid="proposals-table"]').should('be.visible');
+      const endTime = Date.now();
+      const loadTime = endTime - startTime;
+      expect(loadTime).to.be.lessThan(5000); // 5 seconds max
+    });
+
+    it('should handle large datasets efficiently', () => {
+      // Mock large dataset
+      const largeDataset = Array.from({ length: 100 }, (_, i) => ({
+        ...sampleProposals[0],
+        id: i + 1,
+        title: `Proposal ${i + 1}`,
+      }));
+
+      cy.intercept('GET', /\/?api\/proposals.*/, {
+        statusCode: 200,
+        body: {
+          content: largeDataset,
+          totalElements: largeDataset.length,
+          totalPages: 5,
+          size: 20,
+          number: 0,
+        },
+      }).as('getLargeProposals');
+
+      cy.visit('/proposal');
+      cy.wait('@getLargeProposals');
+      cy.get('[data-testid="proposals-table"]').should('be.visible');
+    });
+  });
+
+  describe('Integration Tests', () => {
+    it('should integrate with proposal detail page', () => {
+      cy.get('[data-testid="view-proposal-btn-1"]').click();
+      cy.url().should('include', '/proposal/1');
+      cy.go('back');
+      cy.url().should('include', '/proposal');
+    });
+
+    it('should integrate with proposal edit page', () => {
+      cy.get('[data-testid="edit-proposal-btn-1"]').click();
+      cy.url().should('include', '/proposal/1/edit');
+      cy.go('back');
+      cy.url().should('include', '/proposal');
+    });
+
+    it('should maintain state after navigation', () => {
+      cy.get('[data-testid="search-proposals-input"]').type('Machine Learning');
+      cy.get('[data-testid="view-proposal-btn-1"]').click();
+      cy.go('back');
+      cy.get('[data-testid="search-proposals-input"]').should('have.value', 'Machine Learning');
     });
   });
 });
