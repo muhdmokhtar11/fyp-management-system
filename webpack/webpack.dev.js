@@ -42,6 +42,41 @@ module.exports = async options =>
             },
           ],
         },
+        // Add instrumentation for coverage when COVERAGE environment variable is set
+        ...(process.env.COVERAGE === 'true'
+          ? [
+              {
+                test: /\.(ts|tsx)$/,
+                include: [utils.root('./src/main/webapp/app')],
+                exclude: [/\.spec\.(ts|tsx)$/, /\.test\.(ts|tsx)$/, /node_modules/],
+                use: [
+                  {
+                    loader: 'babel-loader',
+                    options: {
+                      presets: [['@babel/preset-env', { targets: 'defaults' }], '@babel/preset-react', '@babel/preset-typescript'],
+                      plugins: [
+                        [
+                          'istanbul',
+                          {
+                            extension: ['.ts', '.tsx'],
+                            exclude: [
+                              '**/*.spec.ts',
+                              '**/*.spec.tsx',
+                              '**/*.test.ts',
+                              '**/*.test.tsx',
+                              '**/node_modules/**',
+                              '**/test/**',
+                              '**/tests/**',
+                            ],
+                          },
+                        ],
+                      ],
+                    },
+                  },
+                ],
+              },
+            ]
+          : []),
       ],
     },
     devServer: {

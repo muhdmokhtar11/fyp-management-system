@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from 'app/config/store';
 
 import { getEntities as getProposals } from 'app/entities/proposal/proposal.reducer';
 import { createEntity, getEntity, reset, updateEntity } from './file.reducer';
+import { FileStatus } from 'app/shared/model/file.model';
 
 export const FileUpdate = () => {
   const dispatch = useAppDispatch();
@@ -63,7 +64,9 @@ export const FileUpdate = () => {
 
   const defaultValues = () =>
     isNew
-      ? {}
+      ? {
+          status: FileStatus.DRAFT,
+        }
       : {
           ...fileEntity,
           proposal: fileEntity?.proposal?.id,
@@ -105,6 +108,13 @@ export const FileUpdate = () => {
                   required: { value: true, message: 'This field is required.' },
                 }}
               />
+              <ValidatedField id="file-status" name="status" data-cy="status" label="Status" type="select">
+                {Object.values(FileStatus).map(status => (
+                  <option value={status} key={status}>
+                    {status}
+                  </option>
+                ))}
+              </ValidatedField>
               <ValidatedField id="file-proposal" name="proposal" data-cy="proposal" label="Proposal" type="select">
                 <option value="" key="0" />
                 {proposals

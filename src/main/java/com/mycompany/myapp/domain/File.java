@@ -1,6 +1,7 @@
 package com.mycompany.myapp.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.mycompany.myapp.domain.enumeration.FileStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
@@ -31,6 +32,10 @@ public class File implements Serializable {
     @NotNull
     @Column(name = "content_content_type", nullable = false)
     private String contentContentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private FileStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "files", "student", "preferredSupervisor" }, allowSetters = true)
@@ -90,6 +95,19 @@ public class File implements Serializable {
         this.contentContentType = contentContentType;
     }
 
+    public FileStatus getStatus() {
+        return this.status;
+    }
+
+    public File status(FileStatus status) {
+        this.setStatus(status);
+        return this;
+    }
+
+    public void setStatus(FileStatus status) {
+        this.status = status;
+    }
+
     public Proposal getProposal() {
         return this.proposal;
     }
@@ -130,6 +148,7 @@ public class File implements Serializable {
             ", name='" + getName() + "'" +
             ", content='" + getContent() + "'" +
             ", contentContentType='" + getContentContentType() + "'" +
+            ", status='" + getStatus() + "'" +
             "}";
     }
 }

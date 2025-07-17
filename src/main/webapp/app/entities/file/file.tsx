@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button, Table } from 'reactstrap';
+import { Button, Table, Badge, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from 'reactstrap';
 import { byteSize, getSortState, openFile } from 'react-jhipster';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons';
+import { faSort, faSortDown, faSortUp, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import { ASC, DESC } from 'app/shared/util/pagination.constants';
 import { overrideSortStateWithQueryParams } from 'app/shared/util/entity-utils';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
 
-import { getEntities } from './file.reducer';
+import { getEntities, updateEntity } from './file.reducer';
+import { FileStatus } from 'app/shared/model/file.model';
 
 export const File = () => {
   const dispatch = useAppDispatch();
@@ -17,6 +18,7 @@ export const File = () => {
   const navigate = useNavigate();
 
   const [sortState, setSortState] = useState(overrideSortStateWithQueryParams(getSortState(pageLocation, 'id'), pageLocation.search));
+  const [statusFilter, setStatusFilter] = useState<FileStatus | 'ALL'>('ALL');
 
   const fileList = useAppSelector(state => state.file.entities);
   const loading = useAppSelector(state => state.file.loading);
@@ -62,6 +64,32 @@ export const File = () => {
     return order === ASC ? faSortUp : faSortDown;
   };
 
+  const getStatusBadgeColor = (status: FileStatus) => {
+    switch (status) {
+      case FileStatus.DRAFT:
+        return 'secondary';
+      case FileStatus.REVIEW:
+        return 'warning';
+      case FileStatus.APPROVED:
+        return 'success';
+      case FileStatus.REJECTED:
+        return 'danger';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const handleStatusChange = (fileId: number, newStatus: FileStatus) => {
+    const fileToUpdate = fileList.find(file => file.id === fileId);
+    if (fileToUpdate) {
+      dispatch(updateEntity({ ...fileToUpdate, status: newStatus }));
+    }
+  };
+
+  const filteredFileList = fileList.filter(
+    file => statusFilter === 'ALL' || file.status === statusFilter || (!file.status && statusFilter === FileStatus.DRAFT),
+  );
+
   return (
     <div>
       <h2 id="file-heading" data-cy="FileHeading">
@@ -76,8 +104,31 @@ export const File = () => {
           </Link>
         </div>
       </h2>
+      <div className="mb-3">
+        <div className="d-flex align-items-center">
+          <span className="me-2">Filter by Status:</span>
+          <UncontrolledDropdown>
+            <DropdownToggle color="outline-secondary" size="sm" data-cy="statusFilterDropdown">
+              {statusFilter === 'ALL' ? 'All Statuses' : statusFilter}
+            </DropdownToggle>
+            <DropdownMenu>
+              <DropdownItem onClick={() => setStatusFilter('ALL')} data-cy="filterOption-ALL">
+                All Statuses
+              </DropdownItem>
+              {Object.values(FileStatus).map(status => (
+                <DropdownItem key={status} onClick={() => setStatusFilter(status)} data-cy={`filterOption-${status}`}>
+                  <Badge color={getStatusBadgeColor(status)} className="me-2">
+                    {status}
+                  </Badge>
+                  {status}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </UncontrolledDropdown>
+        </div>
+      </div>
       <div className="table-responsive">
-        {fileList && fileList.length > 0 ? (
+        {filteredFileList && filteredFileList.length > 0 ? (
           <Table responsive>
             <thead>
               <tr>
@@ -90,6 +141,9 @@ export const File = () => {
                 <th className="hand" onClick={sort('content')}>
                   Content <FontAwesomeIcon icon={getSortIconByFieldName('content')} />
                 </th>
+                <th className="hand" onClick={sort('status')}>
+                  Status <FontAwesomeIcon icon={getSortIconByFieldName('status')} />
+                </th>
                 <th>
                   Proposal <FontAwesomeIcon icon="sort" />
                 </th>
@@ -97,7 +151,7 @@ export const File = () => {
               </tr>
             </thead>
             <tbody>
-              {fileList.map((file, i) => (
+              {filteredFileList.map((file, i) => (
                 <tr key={`entity-${i}`} data-cy="entityTable">
                   <td>
                     <Button tag={Link} to={`/file/${file.id}`} color="link" size="sm">
@@ -114,6 +168,23 @@ export const File = () => {
                         </span>
                       </div>
                     ) : null}
+                  </td>
+                  <td>
+                    <Badge color={getStatusBadgeColor(file.status)} data-cy="fileStatus">
+                      {file.status || FileStatus.DRAFT}
+                    </Badge>
+                    <UncontrolledDropdown size="sm" className="ms-2">
+                      <DropdownToggle color="link" data-cy="statusDropdown">
+                        <FontAwesomeIcon icon={faEllipsisV} />
+                      </DropdownToggle>
+                      <DropdownMenu>
+                        {Object.values(FileStatus).map(status => (
+                          <DropdownItem key={status} onClick={() => handleStatusChange(file.id, status)} data-cy={`statusOption-${status}`}>
+                            {status}
+                          </DropdownItem>
+                        ))}
+                      </DropdownMenu>
+                    </UncontrolledDropdown>
                   </td>
                   <td>{file.proposal ? <Link to={`/proposal/${file.proposal.id}`}>{file.proposal.id}</Link> : ''}</td>
                   <td className="text-end">
@@ -139,7 +210,11 @@ export const File = () => {
             </tbody>
           </Table>
         ) : (
-          !loading && <div className="alert alert-warning">No Files found</div>
+          !loading && (
+            <div className="alert alert-warning">
+              {statusFilter === 'ALL' ? 'No Files found' : `No Files found with status: ${statusFilter}`}
+            </div>
+          )
         )}
       </div>
     </div>
