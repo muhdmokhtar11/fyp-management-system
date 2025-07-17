@@ -1,0 +1,15 @@
+{
+  "presets": [
+    "@babel/preset-react",
+    "@babel/preset-typescript",
+    ["@babel/preset-env", { "modules": false }]
+  ],
+  "env": {
+    "test": {
+      "plugins": ["istanbul"]
+    },
+    "development": {
+      "plugins": ["istanbul"]
+    }
+  }
+} 

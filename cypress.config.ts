@@ -14,11 +14,16 @@ export default defineConfig({
   env: {
     authenticationUrl: '/api/authenticate',
     jwtStorageName: 'jhi-authenticationToken',
+    coverage: true,
+    codeCoverage: {
+      url: 'http://localhost:8080/__coverage__',
+    },
   },
   e2e: {
     // We've imported your old cypress plugins here.
     // You may want to clean this up later by importing these.
     async setupNodeEvents(on, config) {
+      require('@cypress/code-coverage/task')(on, config);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return (await import('./src/test/javascript/cypress/plugins/index')).default(on, config);
     },

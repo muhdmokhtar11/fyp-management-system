@@ -8,8 +8,8 @@ const ESLintPlugin = require('eslint-webpack-plugin');
 const utils = require('./utils.js');
 const environment = require('./environment');
 
-const getTsLoaderRule = () => {
-  return [
+const getTsLoaderRule = env => {
+  const rules = [
     {
       loader: 'thread-loader',
       options: {
@@ -19,14 +19,28 @@ const getTsLoaderRule = () => {
         workers: require('os').cpus().length - 1,
       },
     },
-    {
-      loader: 'ts-loader',
-      options: {
-        transpileOnly: true,
-        happyPackMode: true,
-      },
-    },
   ];
+
+  // Add babel-loader for coverage in development environment
+  if (env === 'development') {
+    rules.push({
+      loader: 'babel-loader',
+      options: {
+        cacheDirectory: true,
+        plugins: ['istanbul'].filter(Boolean),
+      },
+    });
+  }
+
+  rules.push({
+    loader: 'ts-loader',
+    options: {
+      transpileOnly: true,
+      happyPackMode: true,
+    },
+  });
+
+  return rules;
 };
 
 module.exports = async options => {
